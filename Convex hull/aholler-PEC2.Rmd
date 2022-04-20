@@ -1,0 +1,66 @@
+---
+title: 'Ejemplo de Convex hull'
+author: "Autor: Alexander Holler Rodriguez"
+date: "Abril 2022"
+output:
+  html_document:
+    highlight: default
+    number_sections: yes
+    theme: cosmo
+    toc: yes
+    toc_depth: 2
+    includes:
+      in_header: 75.584-PEC-header.html
+  pdf_document:
+    highlight: zenburn
+    toc: yes
+  word_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+#Ejemplo Convex hull
+
+```{r message= FALSE, warning=FALSE}
+if (!require('cluster')) install.packages('cluster'); library('cluster')
+if (!require('factoextra')) install.packages('factoextra'); library('factoextra')
+
+
+clientes_data<-read.csv("clientes.csv", header=T, sep=",")
+
+if (!require('dplyr')) install.packages('dplyr'); library('dplyr')
+clientes_data<-select(clientes_data,Genre,Age,Annual_Income_.k..,Spending_Score)
+names(clientes_data)[3] <- "Anual_Income_k"
+clientes_data$Genre<-ifelse(clientes_data$Genre == "Male",
+                                    1,0)
+clientes_scale<-clientes_data
+clientes_scale[2:4] <- scale(clientes_scale[2:4])
+```
+
+
+```{r}
+cl4 <- kmeans(clientes_scale, 4, nstart=10, iter.max=50)
+cl4
+clientes_data <- mutate(clientes_data,cluster = cl4$cluster)
+clientes_data%>%
+group_by(cluster)%>%
+summarise(Age_mean= mean(Age),
+          AnIncome_mean= mean(Anual_Income_k),
+          SpenScore_mean= mean(Spending_Score),
+          Gender=(mean(Genre)),
+          Count=(length(cluster)))
+```
+Entonces observamos que podemos agrupar en 4 grupos.
+
+* Grupo con una media de 53 años con income medio, un score medio/bajo y donde son mayoritariamente mujeres
+* Grupo con una media de 25 años con un income medio/bajo, un score medio/alto y donde son mayoritariamente mujeres
+* Grupo con una media de 39 años con un income alto,  un score bajo y donde son mayoritariamente mujeres
+* Grupo con una media de 32 años con un income alto,  un score alto y donde son mayoritariamente mujeres
+
+```{r}
+fviz_silhouette(eclust(clientes_scale, 
+                       FUNcluster="kmeans", k=4, hc_metric="euclidean"))
+```
+
